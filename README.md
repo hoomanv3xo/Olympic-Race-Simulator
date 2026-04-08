@@ -13,4 +13,3 @@ As the race unfolds, each lane displays a live timer that continuously updates, 
 
 The application also includes intuitive controls that allow users to easily create, start, and reset races, making it simple to run multiple simulations in succession. Visually, the project is enriched with features such as animated runner GIFs, glowing and color-changing title text, and a pulsing finish line effect, all of which contribute to a more polished and engaging user experience.
 
-Overall, the Olympic Race Simulator effectively combines interactivity, animation, and real-time data handling to create a compelling and educational web application that showcases the power and flexibility of front-end development.
