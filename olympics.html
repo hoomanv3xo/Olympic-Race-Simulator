@@ -1,0 +1,420 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<title>Olympic Race Simulator</title>
+
+<style>
+
+body{
+font-family:Arial;
+text-align:center;
+background:#FFFFFF;
+color:Blue;
+}
+
+h1{
+color:gold;
+}
+
+#track{
+position:relative;
+width:900px;
+border:4px solid white;
+margin:20px auto;
+background:#FFFFFF;
+padding-bottom:20px;
+}
+
+.runner{
+position:absolute;
+left:0;
+display:flex;
+align-items:center;
+gap:12px;
+}
+
+.runner img{
+height:35px;
+}
+
+.flag{
+width:45px;
+height:30px;
+object-fit:cover;
+border:1px solid white;
+}
+
+.medal{
+width:25px;
+vertical-align:middle;
+margin-right:8px;
+}
+
+.laneTime{
+font-size:14px;
+color:black;
+background:rgba(255,255,255,0.85);
+padding:3px 8px;
+border-radius:6px;
+font-weight:bold;
+}
+
+
+#finish {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 8px;
+  background: white; /* vertical white line */
+  transform-origin: right center;
+  animation: finishPulse 1.2s ease-in-out infinite;
+}
+
+#finish::after {
+  content: "FINISH";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(90deg);
+  transform-origin: center;
+  color: #7FFF00; 
+  font-weight: bold;
+  letter-spacing: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+@keyframes finishPulse {
+  0%   { background: white; transform: scaleX(1);   opacity: 1; }
+  25%  { background: white; transform: scaleX(1.8); opacity: 0.9; }
+  50%  { background: white; transform: scaleX(2.6); opacity: 0.7; }
+  75%  { background: white; transform: scaleX(1.8); opacity: 0.9; }
+  100% { background: white; transform: scaleX(1);   opacity: 1; }
+}
+
+select, button{
+padding:8px;
+font-size:16px;
+margin:5px;
+}
+
+button{
+padding:10px 20px;
+font-size:18px;
+cursor:pointer;
+
+}
+
+#countdown{
+font-size:40px;
+color:green;
+}
+
+#leaderboard{
+list-style:none;
+padding:0;
+}
+
+#leaderboard li{
+font-size:20px;
+margin:8px;
+display:flex;
+align-items:center;
+gap:10px;
+justify-content:center;
+}
+
+.position{
+font-weight:bold;
+color:gold;
+min-width:30px;
+text-align:right;
+}
+
+#title{
+text-shadow: 0 0 10px white, 0 0 20px lightyellow;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1 id="title">
+<img src="flag2.gif" height="30" width="60">
+Olympic Race Simulator
+<img src="flag2.gif" height="30" width="60">
+</h1>
+
+<h3>Select Countries</h3>
+
+<select id="countrySelect" multiple size="10">
+<option value="usa">USA</option>
+<option value="canada">Canada</option>
+<option value="jamaica">Jamaica</option>
+<option value="japan">Japan</option>
+<option value="germany">Germany</option>
+<option value="brazil">Brazil</option>
+<option value="kenya">Kenya</option>
+<option value="china">China</option>
+<option value="france">France</option>
+<option value="italy">Italy</option>
+</select>
+
+<br>
+
+<button onclick="setupRace()" style="background-color: orange; color: blue; border: none;">Create Race</button>
+
+<button onclick="startRace()" 
+style="background: url('flag.gif') no-repeat center; 
+background-size: cover; 
+color: #39FF14; 
+text-shadow: 2px 2px 0 black, -2px -2px 0 white;
+font-weight: bold;
+border: none; 
+padding: 10px 20px;">
+Start Race
+</button>
+
+<button onclick="resetRace()" style="background-color: red; color: blue; border: none;">Reset Race</button>
+
+<div id="countdown"></div>
+
+<div id="track">
+<div id="finish"></div>
+</div>
+
+<h2>🏆 Leaderboard 🏆</h2>
+<ul id="leaderboard"></ul>
+
+<script>
+
+const flagMap = {
+usa:"https://flagcdn.com/w40/us.png",
+canada:"https://flagcdn.com/w40/ca.png",
+jamaica:"https://flagcdn.com/w40/jm.png",
+japan:"https://flagcdn.com/w40/jp.png",
+germany:"https://flagcdn.com/w40/de.png",
+brazil:"https://flagcdn.com/w40/br.png",
+kenya:"https://flagcdn.com/w40/ke.png",
+china:"https://flagcdn.com/w40/cn.png",
+france:"https://flagcdn.com/w40/fr.png",
+italy:"https://flagcdn.com/w40/it.png"
+}
+
+const runnerIcon = "https://media.tenor.com/CgFVnbdM2LMAAAAM/running-marathon.gif"
+
+const medals = {
+gold:"https://cdn-icons-png.flaticon.com/512/2583/2583344.png",
+silver:"https://cdn-icons-png.flaticon.com/512/2583/2583319.png",
+bronze:"https://cdn-icons-png.flaticon.com/512/2583/2583434.png"
+}
+
+let runners=[]
+let finishOrder=[]
+let startTime=0
+let raceInterval=null
+
+function setupRace(){
+
+const track=document.getElementById("track")
+
+document.querySelectorAll(".runner").forEach(r=>r.remove())
+
+runners=[]
+finishOrder=[]
+
+const selected=[...document.getElementById("countrySelect").selectedOptions]
+
+selected.forEach((country,index)=>{
+
+let div=document.createElement("div")
+div.className="runner"
+div.id="runner"+index
+
+div.style.top=(index*70+30)+"px"
+
+let speed=(Math.random()*3+5).toFixed(2)
+
+div.innerHTML = `
+<img class="flag" src="${flagMap[country.value]}">
+<span class="laneTime" id="time${index}">⏱ 0.00s</span>
+<img src="${runnerIcon}">
+`
+
+track.appendChild(div)
+
+runners.push({
+id:div.id,
+country:country.text,
+position:0,
+finished:false,
+speed:parseFloat(speed),
+finishTime:0,
+flag:flagMap[country.value]
+})
+
+})
+
+track.style.height = (selected.length * 70 + 80) + "px"
+
+document.getElementById("leaderboard").innerHTML=""
+document.getElementById("countdown").innerText=""
+
+}
+
+function startRace(){
+
+if(runners.length===0) return
+
+let count=3
+document.getElementById("countdown").innerText=count
+
+let timer=setInterval(()=>{
+
+count--
+
+if(count>0){
+document.getElementById("countdown").innerText=count
+}
+else if(count===0){
+document.getElementById("countdown").innerText="GO!"
+startTime=Date.now()
+runRace()
+}
+else{
+clearInterval(timer)
+document.getElementById("countdown").innerText=""
+}
+
+},1000)
+
+}
+
+function runRace(){
+
+raceInterval=setInterval(()=>{
+
+let currentTime = ((Date.now()-startTime)/1000).toFixed(2)
+
+runners.forEach((r,index)=>{
+
+if(!r.finished){
+
+let move=Math.random()*r.speed
+r.position+=move
+
+let el=document.getElementById(r.id)
+el.style.left=r.position+"px"
+
+// LIVE lane time update
+document.getElementById("time"+index).innerText = "⏱ " + currentTime + "s"
+
+if(r.position>=850){
+
+r.finished=true
+r.finishTime=currentTime
+
+let el = document.getElementById(r.id)
+
+// 🔥 HIDE runner GIF
+let runnerImg = el.querySelector("img:last-child")
+if(runnerImg){
+    runnerImg.style.display = "none"
+}
+
+// freeze time on lane
+document.getElementById("time"+index).innerText = "⏱ " + r.finishTime + "s"
+
+finishOrder.push(r)
+
+updateLeaderboard()
+
+if(finishOrder.length===runners.length){
+clearInterval(raceInterval)
+}
+
+}
+}
+
+})
+
+},100)
+
+}
+
+function updateLeaderboard(){
+
+const board=document.getElementById("leaderboard")
+board.innerHTML=""
+
+finishOrder.forEach((r,index)=>{
+
+let li=document.createElement("li")
+
+let medalImg=""
+
+if(index===0){
+medalImg = `<img class="medal" src="${medals.gold}">`
+}
+else if(index===1){
+medalImg = `<img class="medal" src="${medals.silver}">`
+}
+else if(index===2){
+medalImg = `<img class="medal" src="${medals.bronze}">`
+}
+
+li.innerHTML = `
+<span class="position">${index+1}</span>
+${medalImg}
+<img class="flag" src="${r.flag}">
+${r.country} | ⏱ ${r.finishTime} s | ⚡ ${r.speed} m/s
+`
+
+board.appendChild(li)
+
+})
+
+}
+
+function resetRace(){
+
+clearInterval(raceInterval)
+
+runners=[]
+finishOrder=[]
+startTime=0
+
+document.querySelectorAll(".runner").forEach(r=>r.remove())
+document.getElementById("leaderboard").innerHTML=""
+document.getElementById("countdown").innerText=""
+
+document.getElementById("track").style.height="auto"
+
+}
+
+function getRandomColor() {
+    const letters = "0123456789ABCDEF";
+    let color = "#";
+    for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+}
+
+// change title color every 300ms
+setInterval(() => {
+    document.getElementById("title").style.color = getRandomColor();
+}, 300);
+
+let hue = 0;
+setInterval(() => {
+    document.getElementById("title").style.color = `hsl(${hue}, 100%, 50%)`;
+    hue = (hue + 5) % 360;
+}, 100);
+</script>
+
+</body>
+</html>
